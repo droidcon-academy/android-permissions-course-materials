@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -89,6 +90,19 @@ class MainActivity : ComponentActivity() {
         }
 
         var weatherImageBitmp: ImageBitmap? = null
+
+        val notificationsPermissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+            onResult = { isGranted ->
+                if (isGranted) {
+                    onNotificationPermissionGranted()
+                } else {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissionsViewModel.onPermissionDenied(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+            })
+
         val storagePermissionResultLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
             onResult = { isGranted ->
@@ -142,7 +156,11 @@ class MainActivity : ComponentActivity() {
                 }, onCaptureError = {
                     toast("Cannot capture the screen")
                 }, onShowNotificationClicked = {
-
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        onNotificationPermissionGranted()
+                    }
                 })
             }
         }
