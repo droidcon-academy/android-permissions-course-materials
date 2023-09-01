@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
@@ -21,20 +20,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.droidcon.weatherstation.api_response.CurrentWeatherResponse
 import com.droidcon.weatherstation.api_response.Main
 import com.droidcon.weatherstation.api_response.Weather
-import com.droidcon.weatherstation.api_response.Wind
 import com.droidcon.weatherstation.common.Center
 import com.droidcon.weatherstation.common.WeatherIconUtility
 import com.droidcon.weatherstation.common.toWeatherDetailsList
 import com.droidcon.weatherstation.data.model.WeatherDetailsItem
 import com.droidcon.weatherstation.network.Resource
-import com.droidcon.weatherstation.ui.theme.WeatherStationTheme
 import com.droidcon.weatherstation.ui.theme.greyBackground
 import dev.shreyaspatil.capturable.Capturable
 import dev.shreyaspatil.capturable.controller.rememberCaptureController
@@ -57,7 +53,6 @@ fun HomeScreen(
             is Resource.Loading -> Center {
                 CircularProgressIndicator()
             }
-
             is Resource.Success -> {
                 Column(
                     verticalArrangement = Arrangement.Center,
@@ -72,11 +67,9 @@ fun HomeScreen(
                     )
                 }
             }
-
             is Resource.Error -> Center {
                 Text(text = state.error, style = TextStyle(color = Color.Red))
             }
-
             else -> {}
         }
     }
@@ -242,30 +235,6 @@ private fun WeatherDetails(imageDrawableRes: Int, value: String, label: String) 
                     )
                 )
             }
-        }
-    }
-}
-
-@Preview
-@Composable
-fun HomeScreenPreview() {
-    WeatherStationTheme {
-        Surface {
-            HomeScreen(
-                state = Resource.Success(
-                    HomeUiState(
-                        CurrentWeatherResponse(
-                            weather = listOf(element = Weather(1, "Cloudy", "", "")),
-                            main = Main(27.0, 34, 20),
-                            wind = Wind(75.0),
-                            locationName = "Bengaluru, Karnataka"
-                        ),
-                    )
-                ),
-                onSaveToStorageClicked = { },
-                onCaptureError = { },
-                onShowNotificationClicked = {}
-            )
         }
     }
 }
