@@ -1,3 +1,6 @@
+/*
+Search for "Code Challenge Solution" 
+*/
 package com.droidcon.weatherstation
 
 import android.Manifest
@@ -91,6 +94,7 @@ class MainActivity : ComponentActivity() {
 
         var weatherImageBitmp: ImageBitmap? = null
 
+        //Code Challenge Solution - 1 - Start 
         val notificationsPermissionLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
             onResult = { isGranted ->
@@ -102,6 +106,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             })
+        //Code Challenge Solution Start - 1 - End
 
         val storagePermissionResultLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
@@ -156,11 +161,13 @@ class MainActivity : ComponentActivity() {
                 }, onCaptureError = {
                     toast("Cannot capture the screen")
                 }, onShowNotificationClicked = {
+                    //Code Challenge Solution - 2 - Start 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         notificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     } else {
                         onNotificationPermissionGranted()
                     }
+                    //Code Challenge Solution - 2 - End 
                 })
             }
         }

@@ -6,17 +6,16 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class PermissionsViewModel @Inject constructor() : ViewModel() {
+class PermissionsViewModel @Inject constructor(): ViewModel() {
+
     val visiblePermissionDialogQueue = mutableStateListOf<String>()
 
-    fun dismissDialog() {
+    fun dismissDialog(){
         visiblePermissionDialogQueue.removeFirst()
     }
 
-    fun onPermissionResult(
-        permission: String, isGranted: Boolean
-    ) {
-        if (!isGranted && !visiblePermissionDialogQueue.contains(permission)) {
+    fun onPermissionResult(permission: String, isGranted: Boolean){
+        if(!isGranted && !visiblePermissionDialogQueue.contains(permission)){
             visiblePermissionDialogQueue.add(permission)
         }
     }

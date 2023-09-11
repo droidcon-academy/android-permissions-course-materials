@@ -46,26 +46,75 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun MyApp(navController: NavHostController) {
-
         val permissionsViewModel = hiltViewModel<PermissionsViewModel>()
         val dialogQueue = permissionsViewModel.visiblePermissionDialogQueue
-        var weatherImageBitmp: ImageBitmap? = null
 
-        // Requesting a storage permission
+        val permissionsLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestMultiplePermissions(),
+            onResult = { permissions ->
+                permissions.forEach { permission ->
+                    permissionsViewModel.onPermissionResult(
+                        permission = permission.key,
+                        isGranted = permission.value
+                    )
+                }
+            }
+        )
+
+        dialogQueue.forEach { permission ->
+            PermissionDialog(
+                permissionTextProvider = when (permission) {
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE -> {
+                        StoragePermissionTextProvider()
+                    }
+
+                    Manifest.permission.ACCESS_COARSE_LOCATION -> {
+                        LocationPermissionTextProvider()
+                    }
+
+                    Manifest.permission.POST_NOTIFICATIONS -> {
+                        NotificationsPermissionProvider()
+                    }
+
+                    else -> return@forEach
+                },
+                isPermanentlyDeclined = !shouldShowRequestPermissionRationale(permission),
+                onDismiss = permissionsViewModel::dismissDialog,
+                onOkClick = {
+                    permissionsViewModel.dismissDialog()
+                    permissionsLauncher.launch(
+                        arrayOf(permission)
+                    )
+                },
+                onGoToAppSettingsClick = {
+                    openAppSettings()
+                }
+            )
+        }
+
+        var weatherImageBitmp: ImageBitmap? = null
         val storagePermissionResultLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
             onResult = { isGranted ->
                 if (isGranted) {
                     onStoragePermissionGranted(weatherImageBitmp)
                 } else {
-                    permissionsViewModel.onPermissionResult(
-                        permission = Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        isGranted = isGranted
-                    )
+                    permissionsViewModel.onPermissionResult(Manifest.permission.WRITE_EXTERNAL_STORAGE, false)
                 }
             })
 
-        // Requesting a notification permission
+        val locationPermissionResultLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+            onResult = { isGranted ->
+
+                if (isGranted) {
+                    onLocationPermissionGranted(navController)
+                } else {
+                    permissionsViewModel.onPermissionResult(Manifest.permission.ACCESS_COARSE_LOCATION, false)
+                }
+            }
+        )
+
         val notificationsPermissionLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
             onResult = { isGranted ->
@@ -75,34 +124,9 @@ class MainActivity : ComponentActivity() {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         permissionsViewModel.onPermissionResult(
                             permission = Manifest.permission.POST_NOTIFICATIONS,
-                            isGranted = isGranted
+                            isGranted = false
                         )
                     }
-                }
-            })
-        // Requesting location permission
-        val locationPermissionResultLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
-            onResult = { isGranted ->
-                if (isGranted) {
-                    onLocationPermissionGranted(navController)
-                } else {
-                    permissionsViewModel.onPermissionResult(
-                        permission = Manifest.permission.ACCESS_COARSE_LOCATION,
-                        isGranted = isGranted
-                    )
-                }
-            })
-
-        // Requesting multiple permission
-        val multiplePermissionResultLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestMultiplePermissions(),
-            onResult = { perms ->
-                perms.forEach { permission ->
-                    permissionsViewModel.onPermissionResult(
-                        permission = permission.key,
-                        isGranted = perms[permission.key] == true
-                    )
                 }
             })
 
@@ -123,20 +147,17 @@ class MainActivity : ComponentActivity() {
                 val homeViewModel = hiltViewModel<HomeViewModel>()
                 HomeScreen(homeViewModel.uiState.value, onSaveToStorageClicked = { imageBitmap ->
                     weatherImageBitmp = imageBitmap
-                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M
-                        && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+
+                    if (ActivityCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        ) != PackageManager.PERMISSION_GRANTED
                     ) {
-                        if (ActivityCompat.checkSelfPermission(
-                                this@MainActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE
-                            ) != PackageManager.PERMISSION_GRANTED
-                        ) {
-                            storagePermissionResultLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                        } else {
-                            onStoragePermissionGranted(weatherImageBitmp)
-                        }
-                    } else { // Permission is already granted for older versions
+                        storagePermissionResultLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    } else {
                         onStoragePermissionGranted(weatherImageBitmp)
                     }
+
                 }, onCaptureError = {
                     toast("Cannot capture the screen")
                 }, onShowNotificationClicked = {
@@ -147,31 +168,6 @@ class MainActivity : ComponentActivity() {
                     }
                 })
             }
-        }
-
-        dialogQueue.reversed().forEach { permission ->
-            PermissionDialog(permissionTextProvider = when (permission) {
-                Manifest.permission.WRITE_EXTERNAL_STORAGE -> {
-                    StoragePermissionTextProvider()
-                }
-                Manifest.permission.ACCESS_COARSE_LOCATION -> {
-                    LocationPermissionTextProvider()
-                }
-                Manifest.permission.POST_NOTIFICATIONS -> {
-                    NotificationsPermissionProvider()
-                }
-                else -> return@forEach
-            }, isPermanentlyDeclined = !shouldShowRequestPermissionRationale(
-                permission
-            ), onDismiss = permissionsViewModel::dismissDialog,
-                onOkClick = {
-                    permissionsViewModel.dismissDialog()
-                    multiplePermissionResultLauncher.launch(
-                        arrayOf(permission)
-                    )
-                }, onGoToAppSettingsClick = {
-                    openAppSettings()
-                })
         }
     }
 

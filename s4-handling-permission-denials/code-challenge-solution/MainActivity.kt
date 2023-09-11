@@ -1,3 +1,7 @@
+/*
+For code challenge solution 
+search "Code Challenge Solution" in this file 
+*/
 package com.droidcon.weatherstation
 
 import android.Manifest
@@ -49,13 +53,14 @@ class MainActivity : ComponentActivity() {
         val permissionsViewModel = hiltViewModel<PermissionsViewModel>()
         val dialogQueue = permissionsViewModel.visiblePermissionDialogQueue
 
-        val permissionLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
-            onResult = { isGranted ->
-                if (isGranted) {
-                    onLocationPermissionGranted(navController)
-                } else {
-                    //@Todo handle permission denial
+        val permissionsLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestMultiplePermissions(),
+            onResult = { permissions ->
+                permissions.forEach { permission ->
+                    permissionsViewModel.onPermissionResult(
+                        permission = permission.key,
+                        isGranted = permission.value
+                    )
                 }
             }
         )
@@ -81,7 +86,9 @@ class MainActivity : ComponentActivity() {
                 onDismiss = permissionsViewModel::dismissDialog,
                 onOkClick = {
                     permissionsViewModel.dismissDialog()
-                    permissionLauncher.launch(permission)
+                    permissionsLauncher.launch(
+                        arrayOf(permission)
+                    )
                 },
                 onGoToAppSettingsClick = {
                     openAppSettings()
@@ -91,27 +98,17 @@ class MainActivity : ComponentActivity() {
 
         var weatherImageBitmp: ImageBitmap? = null
 
-        val notificationsPermissionLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
-            onResult = { isGranted ->
-                if (isGranted) {
-                    onNotificationPermissionGranted()
-                } else {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        permissionsViewModel.onPermissionDenied(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                }
-            })
-
+        //Code Challenge Solution - 1 - Start
         val storagePermissionResultLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
             onResult = { isGranted ->
                 if (isGranted) {
                     onStoragePermissionGranted(weatherImageBitmp)
                 } else {
-                    //@Todo handle permission denial
+                    permissionsViewModel.onPermissionResult(Manifest.permission.WRITE_EXTERNAL_STORAGE, false)
                 }
             })
+        //Code Challenge Solution - 1 - End
 
         val locationPermissionResultLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
@@ -120,10 +117,25 @@ class MainActivity : ComponentActivity() {
                 if (isGranted) {
                     onLocationPermissionGranted(navController)
                 } else {
-                    permissionsViewModel.onPermissionDenied(Manifest.permission.ACCESS_COARSE_LOCATION)
+                    permissionsViewModel.onPermissionResult(Manifest.permission.ACCESS_COARSE_LOCATION, false)
                 }
             }
         )
+
+        val notificationsPermissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+            onResult = { isGranted ->
+                if (isGranted) {
+                    onNotificationPermissionGranted()
+                } else {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissionsViewModel.onPermissionResult(
+                            permission = Manifest.permission.POST_NOTIFICATIONS,
+                            isGranted = false
+                        )
+                    }
+                }
+            })
 
         NavHost(navController, startDestination = Screens.Splash.route) {
             composable(route = Screens.Splash.route) {
@@ -143,6 +155,8 @@ class MainActivity : ComponentActivity() {
                 HomeScreen(homeViewModel.uiState.value, onSaveToStorageClicked = { imageBitmap ->
                     weatherImageBitmp = imageBitmap
 
+
+                    //Code Challenge Solution - 2 - Start
                     if (ActivityCompat.checkSelfPermission(
                             this@MainActivity,
                             Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -152,6 +166,7 @@ class MainActivity : ComponentActivity() {
                     } else {
                         onStoragePermissionGranted(weatherImageBitmp)
                     }
+                    //Code Challenge Solution - 2 - End
 
                 }, onCaptureError = {
                     toast("Cannot capture the screen")

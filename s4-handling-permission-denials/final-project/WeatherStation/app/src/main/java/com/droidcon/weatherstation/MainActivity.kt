@@ -48,7 +48,16 @@ class MainActivity : ComponentActivity() {
         val permissionsViewModel = hiltViewModel<PermissionsViewModel>()
         val dialogQueue = permissionsViewModel.visiblePermissionDialogQueue
 
-
+        val permissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+            onResult = { isGranted ->
+                if (isGranted) {
+                    onLocationPermissionGranted(navController)
+                } else {
+                    //@Todo handle permission denial
+                }
+            }
+        )
 
         dialogQueue.forEach { permission ->
             PermissionDialog(
